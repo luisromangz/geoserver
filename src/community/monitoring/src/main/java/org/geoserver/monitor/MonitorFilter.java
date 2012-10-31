@@ -5,19 +5,14 @@
 package org.geoserver.monitor;
 
 import java.io.IOException;
-import java.net.InetAddress;
 import java.net.URLDecoder;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
 import javax.servlet.ServletException;
@@ -26,14 +21,14 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.geoserver.filters.GeoServerFilter;
+import org.geoserver.monitor.RequestData.Status;
+import org.geoserver.monitor.transport.MessageTransport;
+import org.geoserver.platform.GeoServerExtensions;
+import org.geotools.util.logging.Logging;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.User;
-import org.geoserver.filters.GeoServerFilter;
-import org.geoserver.monitor.RequestData.Status;
-import org.geoserver.ows.util.ResponseUtils;
-import org.geoserver.platform.GeoServerExtensions;
-import org.geotools.util.logging.Logging;
 
 public class MonitorFilter implements GeoServerFilter {
 
@@ -42,12 +37,15 @@ public class MonitorFilter implements GeoServerFilter {
     
     Monitor monitor;
     MonitorRequestFilter requestFilter;
+
+    private final MessageTransport transporter;
     
 //    ExecutorService postProcessExecutor;
     
-    public MonitorFilter(Monitor monitor, MonitorRequestFilter requestFilter) {
+    public MonitorFilter(Monitor monitor, MonitorRequestFilter requestFilter, MessageTransport transporter) {
         this.monitor = monitor;
         this.requestFilter = requestFilter;
+        this.transporter = transporter;
         
 //        postProcessExecutor = Executors.newFixedThreadPool(2);
         
@@ -173,7 +171,7 @@ public class MonitorFilter implements GeoServerFilter {
         // we want to transport the message out only when we're done though
 //        postProcessExecutor.execute(new PostProcessTask(monitor, data, req, resp));
         
-        transportData(data);
+        transporter.transport(data);
         
         if (error != null) {
             if (error instanceof RuntimeException) {
@@ -186,13 +184,10 @@ public class MonitorFilter implements GeoServerFilter {
         
     }
 
-    private void transportData(RequestData data) {
-        System.err.println("Transporting data: " + data.internalid);
-    }
-
     public void destroy() {
 //        postProcessExecutor.shutdown();
         monitor.dispose();
+        transporter.destroy();
     }
 
     String getRemoteAddr(HttpServletRequest req) {

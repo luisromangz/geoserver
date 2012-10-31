@@ -39,8 +39,9 @@
 
     <!-- the top level monitoring filter -->
     <bean id="monitorFilter" class="org.geoserver.monitor.MonitorFilter">
-        <constructor-arg ref="monitor"/>
-        <constructor-arg ref="monitorRequestFilter"/>
+        <constructor-arg ref="monitor" index="0" />
+        <constructor-arg ref="monitorRequestFilter" index="1" />
+        <constructor-arg ref="monitorMessageTransport" index="2" />
     </bean>
     
     <!-- hibernate open session in view filter -->
@@ -149,5 +150,20 @@
         <constructor-arg ref="monitorConfig" index="0"/>
         <constructor-arg ref="resourceLoader" index="1"/>
     </bean>
+
+    <!-- Message transport strategies -->
+    <bean id="monitorLoggerTransport" class="org.geoserver.monitor.transport.LoggerMessageTransport">
+    </bean>
+
+    <bean id="asyncTransport" class="org.geoserver.monitor.transport.AsyncMessageTransport">
+        <constructor-arg ref="monitorLoggerTransport" index="0" />
+        <!-- thread pool size -->
+        <constructor-arg value="2" index="1" />
+    </bean>
     
+    <alias name="asyncTransport" alias="monitorMessageTransport" />
+
+<!--     <bean id="monitorHttpTransport" class="org.geoserver.monitor.transport.HttpMessageTransport"> -->
+<!--     </bean> -->
+
 </beans>

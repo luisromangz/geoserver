@@ -14,6 +14,7 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 
+import org.geoserver.monitor.transport.NullMessageTransport;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -37,7 +38,8 @@ public class MonitorFilterTest {
     public void setUp() throws Exception {
         dao = new DummyMonitorDAO();
         
-        filter = new MonitorFilter(new Monitor(dao), new MonitorRequestFilter());
+        filter = new MonitorFilter(new Monitor(dao), new MonitorRequestFilter(),
+                new NullMessageTransport());
         
         chain = new MockFilterChain();
         
