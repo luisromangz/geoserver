@@ -43,13 +43,13 @@ public class MonitorFilter implements GeoServerFilter {
     Monitor monitor;
     MonitorRequestFilter requestFilter;
     
-    ExecutorService postProcessExecutor;
+//    ExecutorService postProcessExecutor;
     
     public MonitorFilter(Monitor monitor, MonitorRequestFilter requestFilter) {
         this.monitor = monitor;
         this.requestFilter = requestFilter;
         
-        postProcessExecutor = Executors.newFixedThreadPool(2);
+//        postProcessExecutor = Executors.newFixedThreadPool(2);
         
         if (monitor.isEnabled()) {
             LOGGER.info("Monitor extension enabled");    
@@ -166,8 +166,14 @@ public class MonitorFilter implements GeoServerFilter {
         
         monitor.complete();
         
-        //post processing
-        postProcessExecutor.execute(new PostProcessTask(monitor, data, req, resp));
+        // -- ROB
+        // some of these post processing require io and can take time to complete
+        // commenting this out for now to keep things simple
+        // although this happens in the background, when just saving to the db this was an update
+        // we want to transport the message out only when we're done though
+//        postProcessExecutor.execute(new PostProcessTask(monitor, data, req, resp));
+        
+        transportData(data);
         
         if (error != null) {
             if (error instanceof RuntimeException) {
@@ -177,10 +183,15 @@ public class MonitorFilter implements GeoServerFilter {
                 throw new RuntimeException(error);
             }
         }
+        
+    }
+
+    private void transportData(RequestData data) {
+        System.err.println("Transporting data: " + data.internalid);
     }
 
     public void destroy() {
-        postProcessExecutor.shutdown();
+//        postProcessExecutor.shutdown();
         monitor.dispose();
     }
 
@@ -235,8 +246,10 @@ public class MonitorFilter implements GeoServerFilter {
         
         public void run() {
             try {
-                List<RequestPostProcessor> pp = new ArrayList();
-                pp.add(new ReverseDNSPostProcessor());
+                List<RequestPostProcessor> pp = new ArrayList<RequestPostProcessor>();
+                // -- ROB
+                // if we're going through spring, why not put everything there?
+//                pp.add(new ReverseDNSPostProcessor());
                 pp.addAll(GeoServerExtensions.extensions(RequestPostProcessor.class));
                 
                 for (RequestPostProcessor p : pp) {

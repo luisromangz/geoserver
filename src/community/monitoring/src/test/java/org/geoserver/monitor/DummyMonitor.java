@@ -5,6 +5,7 @@
 package org.geoserver.monitor;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
@@ -35,7 +36,7 @@ class DummyMonitorDAO implements MonitorDAO {
     }
     
     public List<RequestData> getRequests(Query query) {
-        return null;
+        return Collections.emptyList();
     }
     
     public void getRequests(Query query, RequestDataVisitor visitor) {

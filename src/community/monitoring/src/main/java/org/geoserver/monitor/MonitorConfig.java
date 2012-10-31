@@ -90,17 +90,18 @@ public class MonitorConfig implements ApplicationContextAware {
     }
     
     public MonitorDAO createDAO() {
-        Mode m = getMode();
-        
-        if (m == Mode.LIVE) {
-            return new MemoryMonitorDAO();
-        }
-        
-        HibernateMonitorDAO2 dao = (HibernateMonitorDAO2) context.getBean("hibMonitorDAO");
-        dao.setMode(m);
-        dao.setSync(getSync());
-        
-        return dao;
+//        Mode m = getMode();
+//        
+//        if (m == Mode.LIVE) {
+//            return new MemoryMonitorDAO();
+//        }
+//        
+//        HibernateMonitorDAO2 dao = (HibernateMonitorDAO2) context.getBean("hibMonitorDAO");
+//        dao.setMode(m);
+//        dao.setSync(getSync());
+//        
+//        return dao;
+        return new DummyMonitorDAO();
     }
     
     /**
