@@ -155,15 +155,19 @@
     <bean id="monitorLoggerTransport" class="org.geoserver.monitor.transport.LoggerMessageTransport">
     </bean>
 
+    <bean id="monitorHttpTransport" class="org.geoserver.monitor.transport.HttpMessageTransport">
+        <!-- url -->
+        <constructor-arg value="http://127.0.0.1:9999/" index="0" />
+        <!-- api key -->
+        <constructor-arg value="1234567890" index="1" />
+    </bean>
+
     <bean id="asyncTransport" class="org.geoserver.monitor.transport.AsyncMessageTransport">
-        <constructor-arg ref="monitorLoggerTransport" index="0" />
+        <constructor-arg ref="monitorHttpTransport" index="0" />
         <!-- thread pool size -->
         <constructor-arg value="2" index="1" />
     </bean>
-    
-    <alias name="asyncTransport" alias="monitorMessageTransport" />
 
-<!--     <bean id="monitorHttpTransport" class="org.geoserver.monitor.transport.HttpMessageTransport"> -->
-<!--     </bean> -->
+    <alias name="asyncTransport" alias="monitorMessageTransport" />
 
 </beans>

@@ -128,6 +128,10 @@
    <artifactId>mockrunner</artifactId>
    <scope>test</scope>
   </dependency>
+  <dependency>
+   <groupId>commons-httpclient</groupId>
+   <artifactId>commons-httpclient</artifactId>
+  </dependency>
 
  </dependencies>
 

@@ -7,7 +7,7 @@ import org.geoserver.monitor.RequestData;
 
 /**
  * Asynchronously delegate to another transport
- * 
+ *
  */
 public class AsyncMessageTransport implements MessageTransport {
 
@@ -15,8 +15,8 @@ public class AsyncMessageTransport implements MessageTransport {
 
     private final ExecutorService executor;
 
-    public AsyncMessageTransport(MessageTransport transport, int threadPoolSize) {
-        this.transporter = transport;
+    public AsyncMessageTransport(MessageTransport transporter, int threadPoolSize) {
+        this.transporter = transporter;
         executor = Executors.newFixedThreadPool(threadPoolSize);
     }
 
@@ -28,6 +28,7 @@ public class AsyncMessageTransport implements MessageTransport {
     @Override
     public void destroy() {
         executor.shutdown();
+        transporter.destroy();
     }
 
     private static class AsyncMessageTask implements Runnable {
