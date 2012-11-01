@@ -1,5 +1,6 @@
 package org.geoserver.monitor.transport;
 
+import java.util.Collection;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -7,7 +8,7 @@ import org.geoserver.monitor.RequestData;
 
 /**
  * Asynchronously delegate to another transport
- *
+ * 
  */
 public class AsyncMessageTransport implements MessageTransport {
 
@@ -21,7 +22,7 @@ public class AsyncMessageTransport implements MessageTransport {
     }
 
     @Override
-    public void transport(RequestData data) {
+    public void transport(Collection<RequestData> data) {
         executor.execute(new AsyncMessageTask(transporter, data));
     }
 
@@ -35,9 +36,9 @@ public class AsyncMessageTransport implements MessageTransport {
 
         private final MessageTransport transporter;
 
-        private final RequestData data;
+        private final Collection<RequestData> data;
 
-        private AsyncMessageTask(MessageTransport transport, RequestData data) {
+        private AsyncMessageTask(MessageTransport transport, Collection<RequestData> data) {
             this.transporter = transport;
             this.data = data;
         }

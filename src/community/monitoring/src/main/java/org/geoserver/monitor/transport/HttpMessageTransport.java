@@ -1,6 +1,7 @@
 package org.geoserver.monitor.transport;
 
 import java.io.IOException;
+import java.util.Collection;
 
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.HttpException;
@@ -10,7 +11,7 @@ import org.geoserver.monitor.RequestData;
 
 /**
  * Meant to just be a proof of concept for sending a post out
- *
+ * 
  */
 public class HttpMessageTransport implements MessageTransport {
 
@@ -24,7 +25,7 @@ public class HttpMessageTransport implements MessageTransport {
     }
 
     @Override
-    public void transport(RequestData data) {
+    public void transport(Collection<RequestData> data) {
         HttpClient client = new HttpClient();
         PostMethod postMethod = new PostMethod(url);
         postMethod.addParameter("api", apiKey);
@@ -49,13 +50,20 @@ public class HttpMessageTransport implements MessageTransport {
         }
     }
 
-    private String serializeToJson(RequestData data) {
+    private String serializeToJson(Collection<RequestData> data) {
         // TODO just a stub for now
-        return "{ \"id\":" + data.internalid + "}";
+        StringBuilder b = new StringBuilder();
+        for (RequestData requestData : data) {
+            if (b.length() == 0) {
+                b.append(requestData.internalid);
+            } else {
+                b.append("," + requestData.internalid);
+            }
+        }
+        return "[" + b.toString() + "]";
     }
 
     @Override
     public void destroy() {
     }
-
 }

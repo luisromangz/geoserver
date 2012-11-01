@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.logging.Level;
@@ -170,9 +171,9 @@ public class MonitorFilter implements GeoServerFilter {
         // although this happens in the background, when just saving to the db this was an update
         // we want to transport the message out only when we're done though
 //        postProcessExecutor.execute(new PostProcessTask(monitor, data, req, resp));
-        
-        transporter.transport(data);
-        
+
+        transporter.transport(Collections.singletonList(data));
+
         if (error != null) {
             if (error instanceof RuntimeException) {
                 throw (RuntimeException)error;

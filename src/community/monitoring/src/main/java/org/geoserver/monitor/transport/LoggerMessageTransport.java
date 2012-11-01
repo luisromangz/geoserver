@@ -1,5 +1,6 @@
 package org.geoserver.monitor.transport;
 
+import java.util.Collection;
 import java.util.logging.Logger;
 
 import org.geoserver.monitor.RequestData;
@@ -10,8 +11,10 @@ public class LoggerMessageTransport implements MessageTransport {
     private static Logger LOGGER = Logging.getLogger("org.geoserver.monitor.transport");
 
     @Override
-    public void transport(RequestData data) {
-        LOGGER.info("Transporting data: " + data.internalid);
+    public void transport(Collection<RequestData> data) {
+        for (RequestData requestData : data) {
+            LOGGER.info("Transporting data: " + requestData.internalid);
+        }
     }
 
     @Override

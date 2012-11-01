@@ -162,12 +162,18 @@
         <constructor-arg value="1234567890" index="1" />
     </bean>
 
-    <bean id="asyncTransport" class="org.geoserver.monitor.transport.AsyncMessageTransport">
+    <bean id="monitorAsyncTransport" class="org.geoserver.monitor.transport.AsyncMessageTransport">
         <constructor-arg ref="monitorHttpTransport" index="0" />
         <!-- thread pool size -->
         <constructor-arg value="2" index="1" />
     </bean>
 
-    <alias name="asyncTransport" alias="monitorMessageTransport" />
+    <bean id="monitorQueuedTransport" class="org.geoserver.monitor.transport.QueuedMessageTransport">
+        <constructor-arg ref="monitorHttpTransport" index="0" />
+        <!-- polling time in seconds -->
+        <constructor-arg value="3" index="1" />
+    </bean>
+
+    <alias name="monitorQueuedTransport" alias="monitorMessageTransport" />
 
 </beans>

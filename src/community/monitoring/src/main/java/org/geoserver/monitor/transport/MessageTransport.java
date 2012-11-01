@@ -1,5 +1,7 @@
 package org.geoserver.monitor.transport;
 
+import java.util.Collection;
+
 import org.geoserver.monitor.RequestData;
 
 /**
@@ -12,7 +14,7 @@ public interface MessageTransport {
      * 
      * @param data request data to transport
      */
-    void transport(RequestData data);
+    void transport(Collection<RequestData> data);
 
     /**
      * Hook to shutdown any threads if started asynchronously
