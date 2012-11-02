@@ -11,6 +11,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -41,14 +43,14 @@ public class MonitorFilter implements GeoServerFilter {
 
     private final MessageTransport transporter;
     
-//    ExecutorService postProcessExecutor;
+    private final ExecutorService postProcessExecutor;
     
     public MonitorFilter(Monitor monitor, MonitorRequestFilter requestFilter, MessageTransport transporter) {
         this.monitor = monitor;
         this.requestFilter = requestFilter;
         this.transporter = transporter;
         
-//        postProcessExecutor = Executors.newFixedThreadPool(2);
+        postProcessExecutor = Executors.newCachedThreadPool();
         
         if (monitor.isEnabled()) {
             LOGGER.info("Monitor extension enabled");    
@@ -165,14 +167,7 @@ public class MonitorFilter implements GeoServerFilter {
         
         monitor.complete();
         
-        // -- ROB
-        // some of these post processing require io and can take time to complete
-        // commenting this out for now to keep things simple
-        // although this happens in the background, when just saving to the db this was an update
-        // we want to transport the message out only when we're done though
-//        postProcessExecutor.execute(new PostProcessTask(monitor, data, req, resp));
-
-        transporter.transport(Collections.singletonList(data));
+        postProcessExecutor.execute(new PostProcessTask(monitor, data, req, resp, transporter));
 
         if (error != null) {
             if (error instanceof RuntimeException) {
@@ -186,7 +181,7 @@ public class MonitorFilter implements GeoServerFilter {
     }
 
     public void destroy() {
-//        postProcessExecutor.shutdown();
+        postProcessExecutor.shutdown();
         monitor.dispose();
         transporter.destroy();
     }
@@ -232,23 +227,21 @@ public class MonitorFilter implements GeoServerFilter {
         RequestData data;
         HttpServletRequest request;
         HttpServletResponse response;
+        private final MessageTransport transporter;
         
-        PostProcessTask(Monitor monitor, RequestData data, HttpServletRequest request, HttpServletResponse response) {
+        PostProcessTask(Monitor monitor, RequestData data, HttpServletRequest request,
+                HttpServletResponse response, MessageTransport transporter) {
             this.monitor = monitor;
             this.data = data;
             this.request = request;
             this.response = response;
+            this.transporter = transporter;
         }
         
         public void run() {
             try {
-                List<RequestPostProcessor> pp = new ArrayList<RequestPostProcessor>();
-                // -- ROB
-                // if we're going through spring, why not put everything there?
-//                pp.add(new ReverseDNSPostProcessor());
-                pp.addAll(GeoServerExtensions.extensions(RequestPostProcessor.class));
-                
-                for (RequestPostProcessor p : pp) {
+                for (RequestPostProcessor p : GeoServerExtensions
+                        .extensions(RequestPostProcessor.class)) {
                     try {
                         p.run(data, request, response);
                     }
@@ -258,6 +251,8 @@ public class MonitorFilter implements GeoServerFilter {
                 }
 
                 monitor.postProcessed(data);
+
+                transporter.transport(Collections.singletonList(data));
             }
             finally {
                 monitor = null;

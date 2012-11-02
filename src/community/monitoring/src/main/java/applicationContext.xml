@@ -141,9 +141,15 @@
 <!--     </bean> -->
     
     <!-- post processors -->
-    <bean id="layerNameNormalizer" class="org.geoserver.monitor.LayerNameNormalizer">
+    <bean id="monitorLayerNameNormalizer" class="org.geoserver.monitor.LayerNameNormalizer">
         <constructor-arg ref="catalog"/>
     </bean>
+    <bean id="monitorReverseDNSPostProcessor" class="org.geoserver.monitor.ReverseDNSPostProcessor">
+    </bean>
+    <!-- uncomment when GeoLiteCity.dat is in place -->
+<!--     <bean id="monitorGeoIPPostProcessor" class="org.geoserver.monitor.GeoIPPostProcessor"> -->
+<!--         <constructor-arg ref="resourceLoader"/> -->
+<!--     </bean> -->
 
     <!--  audit listener -->
     <bean id="auditor" class="org.geoserver.monitor.AuditLogger">
