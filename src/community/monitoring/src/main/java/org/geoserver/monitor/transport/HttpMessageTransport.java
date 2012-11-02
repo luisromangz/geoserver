@@ -3,6 +3,7 @@ package org.geoserver.monitor.transport;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.io.UnsupportedEncodingException;
 import java.util.Collection;
 import java.util.List;
 import java.util.logging.Level;
@@ -15,7 +16,10 @@ import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.HttpException;
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.httpclient.methods.PostMethod;
+import org.apache.commons.httpclient.methods.StringRequestEntity;
 import org.geoserver.monitor.RequestData;
+
+import com.google.common.base.Throwables;
 
 /**
  * Meant to just be a proof of concept for sending a post out
@@ -38,15 +42,23 @@ public class HttpMessageTransport implements MessageTransport {
     // if sending fails, log failure and just drop message
     @Override
     public void transport(Collection<RequestData> data) {
-        String payload = serializeToJson(data);
-        if (payload == null) {
-            LOGGER.warning("Failed to serialize request data");
-            return;
-        }
         HttpClient client = new HttpClient();
         PostMethod postMethod = new PostMethod(url);
-        postMethod.addParameter("api", apiKey);
-        postMethod.addParameter("payload", payload);
+
+        // set payload of message
+        JSONObject body = new JSONObject();
+        JSONArray payload = serializeToJson(data);
+        body.element("messages", payload);
+        body.element("api", apiKey);
+        StringRequestEntity requestEntity = null;
+        try {
+            requestEntity = new StringRequestEntity(body.toString(), "application/json", "UTF-8");
+        } catch (UnsupportedEncodingException e) {
+            Throwables.propagate(e);
+        }
+        postMethod.setRequestEntity(requestEntity);
+
+        // send message
         try {
             int statusCode = client.executeMethod(postMethod);
             // if we receive a status code saying api key is invalid
@@ -73,12 +85,12 @@ public class HttpMessageTransport implements MessageTransport {
         }
     }
 
-    private String serializeToJson(Collection<RequestData> data) {
+    private JSONArray serializeToJson(Collection<RequestData> data) {
         JSONArray jsonArray = new JSONArray();
         for (RequestData requestData : data) {
             jsonArray.add(serializeToJson(requestData));
         }
-        return jsonArray.toString();
+        return jsonArray;
     }
 
     // consolidate request path and query string
