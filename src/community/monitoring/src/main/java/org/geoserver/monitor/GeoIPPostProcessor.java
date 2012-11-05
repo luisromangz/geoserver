@@ -6,13 +6,13 @@ package org.geoserver.monitor;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.commons.collections.map.LRUMap;
 import org.geoserver.platform.GeoServerResourceLoader;
 import org.geotools.util.logging.Logging;
 
@@ -22,70 +22,65 @@ import com.maxmind.geoip.LookupService;
 public class GeoIPPostProcessor implements RequestPostProcessor {
 
     static Logger LOGGER = Logging.getLogger("org.geoserver.montior");
-    
-    /**
-     * cached geoip lookup service
-     */
-    static LookupService geoIPLookup;
-    
-    //TODO: cache by IP address
-    
-    GeoServerResourceLoader loader;
-    AtomicBoolean warned = new AtomicBoolean(false);
-    
-    public GeoIPPostProcessor(GeoServerResourceLoader loader) {
-        this.loader = loader;
+
+    private final LRUMap cache;
+
+    private final LookupService geoIPLookup;
+
+    private static final String MONITOR_PATH = "monitoring";
+
+    public GeoIPPostProcessor(GeoServerResourceLoader loader, String lookupDBFileName, int cacheSize) {
+        geoIPLookup = lookupGeoIPDatabase(loader, lookupDBFileName);
+        cache = new LRUMap(cacheSize);
     }
-    
+
     public void run(RequestData data, HttpServletRequest request, HttpServletResponse response) {
-        if (data.getRemoteAddr() == null) {
+        if (geoIPLookup == null) {
+            return;
+        }
+
+        String remoteAddr = data.getRemoteAddr();
+        if (remoteAddr == null) {
             LOGGER.info("Request data did not contain ip address. Unable to perform GeoIP lookup.");
             return;
         }
-        
-        if (geoIPLookup == null) {
-            synchronized (this) {
-                if (geoIPLookup == null) {
-                    geoIPLookup = lookupGeoIPDatabase();
-                }
+
+        Location loc = null;
+        // we also cache the fact that we didn't find the remoteAddr
+        if (cache.containsKey(remoteAddr)) {
+            loc = (Location) cache.get(remoteAddr);
+            if (loc == null) {
+                return;
+            }
+        } else {
+            loc = geoIPLookup.getLocation(remoteAddr);
+            cache.put(remoteAddr, loc);
+            if (loc == null) {
+                LOGGER.fine("Unable to obtain location for " + remoteAddr);
+                return;
             }
         }
-        
-        if (geoIPLookup == null) {
-            return;
-        }
-        
-        Location loc = geoIPLookup.getLocation(data.getRemoteAddr());
-        if (loc == null) {
-            LOGGER.fine("Unable to obtain location for " + data.getRemoteAddr());
-            return;
-        }
-        
+
         data.setRemoteCountry(loc.countryName);
         data.setRemoteCity(loc.city);
         data.setRemoteLat(loc.latitude);
         data.setRemoteLon(loc.longitude);
     }
-    
-    LookupService lookupGeoIPDatabase() {
+
+    private static LookupService lookupGeoIPDatabase(GeoServerResourceLoader loader, String filename) {
         try {
-            File f = loader.find("monitoring", "GeoLiteCity.dat");
+            File f = loader.find(MONITOR_PATH, filename);
             if (f != null) {
                 return new LookupService(f);
             }
-            
-            if (!warned.get()) {
-                warned.set(true);
-                
-                String path = 
-                    new File(loader.getBaseDirectory(), "monitoring/GeoLiteCity.dat").getAbsolutePath(); 
-                LOGGER.warning("GeoIP database " + path  + " is not available. " +
-                    "Please install the file to enable GeoIP lookups.");
-            }
+
+            // monitor db not found, log and return null
+            File monitorDir = new File(loader.getBaseDirectory(), MONITOR_PATH);
+            String path = new File(monitorDir, filename).getAbsolutePath();
+            LOGGER.warning("GeoIP database " + path + " is not available. "
+                    + "Please install the file to enable GeoIP lookups.");
             return null;
-            
-        } 
-        catch (IOException e) {
+        } catch (IOException e) {
             LOGGER.log(Level.WARNING, "Error occured looking up GeoIP database", e);
             return null;
         }

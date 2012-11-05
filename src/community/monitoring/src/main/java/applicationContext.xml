@@ -146,10 +146,12 @@
     </bean>
     <bean id="monitorReverseDNSPostProcessor" class="org.geoserver.monitor.ReverseDNSPostProcessor">
     </bean>
-    <!-- uncomment when GeoLiteCity.dat is in place -->
-<!--     <bean id="monitorGeoIPPostProcessor" class="org.geoserver.monitor.GeoIPPostProcessor"> -->
-<!--         <constructor-arg ref="resourceLoader"/> -->
-<!--     </bean> -->
+    <bean id="monitorGeoIPPostProcessor" class="org.geoserver.monitor.GeoIPPostProcessor">
+        <constructor-arg ref="resourceLoader" index="0" />
+        <constructor-arg value="GeoLiteCity.dat" index="1" />
+        <!-- lru cache size -->
+        <constructor-arg value="100" index="2" />
+    </bean>
 
     <!--  audit listener -->
     <bean id="auditor" class="org.geoserver.monitor.AuditLogger">
