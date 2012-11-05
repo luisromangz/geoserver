@@ -6,7 +6,6 @@ package org.geoserver.monitor;
 
 import java.io.IOException;
 import java.net.URLDecoder;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
@@ -33,6 +32,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.User;
 
+import com.google.common.collect.ImmutableList;
+
 public class MonitorFilter implements GeoServerFilter {
 
     
@@ -44,12 +45,15 @@ public class MonitorFilter implements GeoServerFilter {
     private final MessageTransport transporter;
     
     private final ExecutorService postProcessExecutor;
+
+    private final List<RequestPostProcessor> postProcessors;
     
     public MonitorFilter(Monitor monitor, MonitorRequestFilter requestFilter, MessageTransport transporter) {
         this.monitor = monitor;
         this.requestFilter = requestFilter;
         this.transporter = transporter;
         
+        postProcessors = ImmutableList.copyOf(GeoServerExtensions.extensions(RequestPostProcessor.class));
         postProcessExecutor = Executors.newCachedThreadPool();
         
         if (monitor.isEnabled()) {
@@ -167,7 +171,8 @@ public class MonitorFilter implements GeoServerFilter {
         
         monitor.complete();
         
-        postProcessExecutor.execute(new PostProcessTask(monitor, data, req, resp, transporter));
+        postProcessExecutor.execute(new PostProcessTask(monitor, postProcessors, transporter, data,
+                req, resp));
 
         if (error != null) {
             if (error instanceof RuntimeException) {
@@ -223,15 +228,18 @@ public class MonitorFilter implements GeoServerFilter {
     
     static class PostProcessTask implements Runnable {
 
-        Monitor monitor;
-        RequestData data;
-        HttpServletRequest request;
-        HttpServletResponse response;
+        private final Monitor monitor;
+        private final RequestData data;
+        private final HttpServletRequest request;
+        private final HttpServletResponse response;
         private final MessageTransport transporter;
+        private final List<RequestPostProcessor> postProcessors;
         
-        PostProcessTask(Monitor monitor, RequestData data, HttpServletRequest request,
-                HttpServletResponse response, MessageTransport transporter) {
+        private PostProcessTask(Monitor monitor, List<RequestPostProcessor> postProcessors,
+                MessageTransport transporter, RequestData data, HttpServletRequest request,
+                HttpServletResponse response) {
             this.monitor = monitor;
+            this.postProcessors = postProcessors;
             this.data = data;
             this.request = request;
             this.response = response;
@@ -239,27 +247,17 @@ public class MonitorFilter implements GeoServerFilter {
         }
         
         public void run() {
-            try {
-                for (RequestPostProcessor p : GeoServerExtensions
-                        .extensions(RequestPostProcessor.class)) {
-                    try {
-                        p.run(data, request, response);
-                    }
-                    catch(Exception e) {
-                        LOGGER.log(Level.WARNING, "Post process task failed", e);
-                    }
+            for (RequestPostProcessor p : postProcessors) {
+                try {
+                    p.run(data, request, response);
+                } catch (Exception e) {
+                    LOGGER.log(Level.WARNING, "Post process task failed", e);
                 }
-
-                monitor.postProcessed(data);
-
-                transporter.transport(Collections.singletonList(data));
             }
-            finally {
-                monitor = null;
-                data = null;
-                request = null;
-                response = null;
-            }
+
+            monitor.postProcessed(data);
+
+            transporter.transport(Collections.singletonList(data));
         }
     }
 
