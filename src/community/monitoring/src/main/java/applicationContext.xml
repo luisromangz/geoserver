@@ -163,7 +163,7 @@
 
     <bean id="monitorHttpTransport" class="org.geoserver.monitor.transport.HttpMessageTransport">
         <!-- url -->
-        <constructor-arg value="http://127.0.0.1:9999/" index="0" />
+        <constructor-arg value="http://127.0.0.1:9999/controller/v1/message/store" index="0" />
         <!-- api key -->
         <constructor-arg value="1234567890" index="1" />
     </bean>
