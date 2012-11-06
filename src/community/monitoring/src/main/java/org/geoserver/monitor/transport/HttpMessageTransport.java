@@ -129,9 +129,16 @@ public class HttpMessageTransport implements MessageTransport {
         json.elementOpt("remoteUser", requestData.getRemoteUser());
         json.elementOpt("referer", requestData.getHttpReferer());
 
-        // TODO add remote geoip and address location once post processing is hooked up again
-        // country/city and lat/lon
-
+        String country = requestData.getRemoteCountry();
+        String city = requestData.getRemoteCity();
+        // country and city only get set if we have geoip information
+        // if we don't check, we will send lat/lon values of 0 because those are primitive
+        if (country != null && city != null) {
+            json.element("country", country);
+            json.element("city", city);
+            json.elementOpt("latitude", requestData.getRemoteLat());
+            json.elementOpt("longitude", requestData.getRemoteLon());
+        }
         json.element("serverHost", requestData.getHost());
         json.element("internalHost", requestData.getInternalHost());
 
