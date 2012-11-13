@@ -106,48 +106,51 @@ public class HttpMessageTransport implements MessageTransport {
 
         json.element("id", requestData.internalid);
 
-        json.element("requestStatus", requestData.getStatus());
         json.element("url", buildURL(requestData));
-        json.element("method", requestData.getHttpMethod());
+        json.elementOpt("http_referer", requestData.getHttpReferer());
 
-        json.element("responseLength", requestData.getResponseLength());
-        json.element("responseContentType", requestData.getResponseContentType());
-        json.element("responseStatus", requestData.getResponseStatus());
-        json.elementOpt("error", requestData.getErrorMessage());
+        json.element("request_method", requestData.getHttpMethod());
+        json.element("request_length", requestData.getBodyContentLength());
+        json.elementOpt("request_content_type", requestData.getBodyContentType());
+
+        json.element("response_status", requestData.getResponseStatus());
+        json.element("response_length", requestData.getResponseLength());
+        json.element("response_content_type", requestData.getResponseContentType());
 
         json.element("category", requestData.getCategory());
-        json.elementOpt("operation", requestData.getOperation());
-        json.elementOpt("suboperation", requestData.getSubOperation());
         json.elementOpt("service", requestData.getService());
-        json.elementOpt("owsversion", requestData.getOwsVersion());
 
-        json.element("startTimeMillis", requestData.getStartTime().getTime());
-        json.element("endTimeMillis", requestData.getEndTime().getTime());
+        json.elementOpt("operation", requestData.getOperation());
+        json.elementOpt("sub_operation", requestData.getSubOperation());
+        json.elementOpt("ows_version", requestData.getOwsVersion());
 
-        json.element("remoteAddr", requestData.getRemoteAddr());
-        json.elementOpt("remoteUserAgent", requestData.getRemoteUserAgent());
-        json.elementOpt("remoteUser", requestData.getRemoteUser());
-        json.elementOpt("referer", requestData.getHttpReferer());
+        // start_time is seconds since epoch
+        // duration is in milliseconds
+        long startMillis = requestData.getStartTime().getTime();
+        long endMillis = requestData.getEndTime().getTime();
+        json.element("start_time", startMillis / 1000);
+        json.element("duration", endMillis - startMillis);
 
-        String country = requestData.getRemoteCountry();
-        String city = requestData.getRemoteCity();
-        // country and city only get set if we have geoip information
-        // if we don't check, we will send lat/lon values of 0 because those are primitive
-        if (country != null && city != null) {
-            json.element("country", country);
-            json.element("city", city);
-            json.elementOpt("latitude", requestData.getRemoteLat());
-            json.elementOpt("longitude", requestData.getRemoteLon());
+        json.elementOpt("server_host", requestData.getHost());
+        json.element("internal_server_host", requestData.getInternalHost());
+
+        json.element("remote_address", requestData.getRemoteAddr());
+        json.elementOpt("remote_host", requestData.getRemoteHost());
+        json.elementOpt("remote_user_agent", requestData.getRemoteUserAgent());
+        json.elementOpt("remote_user", requestData.getRemoteUser());
+
+        // country only gets set if the ip lookup succeeded
+        if (requestData.getRemoteCountry() != null) {
+            json.element("remote_latitude", requestData.getRemoteLat());
+            json.element("remote_longitude", requestData.getRemoteLon());
         }
-        json.element("serverHost", requestData.getHost());
-        json.element("internalHost", requestData.getInternalHost());
+
+        json.elementOpt("error", requestData.getErrorMessage());
 
         List<String> resources = requestData.getResources();
         if (resources != null && !resources.isEmpty()) {
             JSONArray jsonResources = new JSONArray();
-            for (String resource : resources) {
-                jsonResources.add(resource);
-            }
+            jsonResources.addAll(resources);
             json.element("resources", resources);
         }
 
