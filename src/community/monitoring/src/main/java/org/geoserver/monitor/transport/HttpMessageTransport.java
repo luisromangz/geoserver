@@ -18,6 +18,7 @@ import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.httpclient.methods.StringRequestEntity;
 import org.geoserver.monitor.RequestData;
+import org.geotools.util.logging.Logging;
 
 import com.google.common.base.Throwables;
 
@@ -31,7 +32,7 @@ public class HttpMessageTransport implements MessageTransport {
 
     private final String apiKey;
 
-    private static final Logger LOGGER = Logger.getLogger("org.geoserver.monitor.transport");
+    private static final Logger LOGGER = Logging.getLogger(HttpMessageTransport.class);
 
     public HttpMessageTransport(String url, String apiKey) {
         this.url = url;
@@ -50,6 +51,7 @@ public class HttpMessageTransport implements MessageTransport {
         JSONArray payload = serializeToJson(data);
         body.element("messages", payload);
         body.element("api", apiKey);
+
         StringRequestEntity requestEntity = null;
         try {
             requestEntity = new StringRequestEntity(body.toString(), "application/json", "UTF-8");
@@ -57,6 +59,10 @@ public class HttpMessageTransport implements MessageTransport {
             Throwables.propagate(e);
         }
         postMethod.setRequestEntity(requestEntity);
+
+        if (LOGGER.isLoggable(Level.FINE)) {
+            LOGGER.fine(payload.toString());
+        }
 
         // send message
         try {
