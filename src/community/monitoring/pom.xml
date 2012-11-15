@@ -132,6 +132,10 @@
    <groupId>commons-httpclient</groupId>
    <artifactId>commons-httpclient</artifactId>
   </dependency>
+  <dependency>
+    <groupId>com.google.guava</groupId>
+    <artifactId>guava</artifactId>
+  </dependency>
 
  </dependencies>
 
