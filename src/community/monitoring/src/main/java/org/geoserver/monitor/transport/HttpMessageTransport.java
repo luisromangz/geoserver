@@ -61,7 +61,7 @@ public class HttpMessageTransport implements MessageTransport {
         postMethod.setRequestEntity(requestEntity);
 
         if (LOGGER.isLoggable(Level.FINE)) {
-            LOGGER.fine(payload.toString());
+            LOGGER.fine(body.toString());
         }
 
         // send message
