@@ -123,7 +123,7 @@ public class HttpMessageTransport implements MessageTransport {
         json.element("response_length", requestData.getResponseLength());
         json.element("response_content_type", requestData.getResponseContentType());
 
-        json.element("category", requestData.getCategory());
+        json.element("category", requestData.getCategory().toString());
         json.elementOpt("service", requestData.getService());
 
         json.elementOpt("operation", requestData.getOperation());
