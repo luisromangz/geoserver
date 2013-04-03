@@ -9,6 +9,8 @@ import static org.custommonkey.xmlunit.XMLAssert.assertXpathEvaluatesTo;
 import java.awt.geom.AffineTransform;
 import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.io.IOException;
+import java.math.BigDecimal;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -17,6 +19,10 @@ import java.util.List;
 import java.util.Map;
 
 import javax.imageio.metadata.IIOMetadataNode;
+import javax.mail.MessagingException;
+import javax.mail.Multipart;
+import javax.mail.Session;
+import javax.mail.internet.MimeMessage;
 import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -29,6 +35,11 @@ import junit.framework.Assert;
 import org.custommonkey.xmlunit.SimpleNamespaceContext;
 import org.custommonkey.xmlunit.XMLUnit;
 import org.custommonkey.xmlunit.XpathEngine;
+import org.geoserver.catalog.CoverageInfo;
+import org.geoserver.catalog.DimensionInfo;
+import org.geoserver.catalog.DimensionPresentation;
+import org.geoserver.catalog.ResourceInfo;
+import org.geoserver.catalog.impl.DimensionInfoImpl;
 import org.geoserver.config.GeoServer;
 import org.geoserver.data.test.SystemTestData;
 import org.geoserver.test.GeoServerSystemTestSupport;
@@ -53,10 +64,12 @@ import org.w3c.dom.ls.LSInput;
 import org.w3c.dom.ls.LSResourceResolver;
 import org.xml.sax.SAXParseException;
 
+import com.mockrunner.mock.web.MockHttpServletResponse;
+
 /**
  * Base support class for wcs tests.
  * 
- * @author Andrea Aime, TOPP
+ * @author Andrea Aime, GeoSolutions
  * 
  */
 @SuppressWarnings("serial")
@@ -193,6 +206,8 @@ public abstract class WCSTestSupport extends GeoServerSystemTestSupport {
         namespaces.put("int", "http://www.opengis.net/WCS_service-extension_interpolation/1.0");
         namespaces.put("gmlcov", "http://www.opengis.net/gmlcov/1.0");
         namespaces.put("swe", "http://www.opengis.net/swe/2.0");
+        namespaces.put("gml", "http://www.opengis.net/gml/3.2");
+        namespaces.put("wcsgs", "http://www.geoserver.org/wcsgs/2.0");
         XMLUnit.setXpathNamespaceContext(new SimpleNamespaceContext(namespaces));
         xpath = XMLUnit.newXpathEngine();
 
@@ -245,7 +260,7 @@ public abstract class WCSTestSupport extends GeoServerSystemTestSupport {
     protected void checkFullCapabilitiesDocument(Document dom) throws Exception {
         checkValidationErrors(dom, WCS20_SCHEMA);
         
-        // todo: check all the layers are here, the profiles, and so on
+        // TODO: check all the layers are here, the profiles, and so on
         
         // check that we have the crs extension
         assertXpathEvaluatesTo("1", "count(//ows:ServiceIdentification[ows:Profile='http://www.opengis.net/spec/WCS_service-extension_crs/1.0/conf/crs'])", dom);
@@ -362,6 +377,54 @@ public abstract class WCSTestSupport extends GeoServerSystemTestSupport {
         final AffineTransform gridToCRS = getAffineTransform(coverage);
         return (gridToCRS != null) ? XAffineTransform.getScale(gridToCRS) : Double.NaN;
     }
+    
+    /**
+     * Parses a multipart message from the response
+     * @param response
+     * @return
+     * @throws MessagingException
+     * @throws IOException
+     */
+    protected Multipart getMultipart(MockHttpServletResponse response) throws MessagingException,
+            IOException {
+        MimeMessage body = new MimeMessage((Session) null, getBinaryInputStream(response));
+        Multipart multipart = (Multipart) body.getContent();
+        return multipart;
+    }
 
+    /**
+     * Configures the specified dimension for a coverage
+     * 
+     * @param coverageName
+     * @param metadataKey
+     * @param presentation
+     * @param resolution
+     */
+    protected void setupRasterDimension(String coverageName, String metadataKey, DimensionPresentation presentation, Double resolution) {
+        CoverageInfo info = getCatalog().getCoverageByName(coverageName);
+        DimensionInfo di = new DimensionInfoImpl();
+        di.setEnabled(true);
+        di.setPresentation(presentation);
+        if(resolution != null) {
+            di.setResolution(new BigDecimal(resolution));
+        }
+        info.getMetadata().put(metadataKey, di);
+        getCatalog().save(info);
+    }
+    
+    /**
+     * Clears dimension information from the specified coverage
+     * 
+     * @param coverageName
+     * @param metadataKey
+     * @param presentation
+     * @param resolution
+     */
+    protected void clearDimensions(String coverageName) {
+        CoverageInfo info = getCatalog().getCoverageByName(coverageName);
+        info.getMetadata().remove(ResourceInfo.TIME);
+        info.getMetadata().remove(ResourceInfo.ELEVATION);
+        getCatalog().save(info);
+    }
     
 }

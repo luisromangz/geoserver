@@ -64,6 +64,8 @@ import org.geotools.referencing.CRS;
 import org.geotools.referencing.CRS.AxisOrder;
 import org.geotools.styling.Style;
 import org.geotools.util.Converters;
+import org.geotools.util.DateRange;
+import org.geotools.util.NumberRange;
 import org.geotools.util.Range;
 import org.geotools.util.Version;
 import org.geotools.util.logging.Logging;
@@ -174,7 +176,7 @@ public class WMS implements ApplicationContextAware {
     public static final String KML_KMSCORE = "kmlKmscore";
 
     public static final int KML_KMSCORE_DEFAULT = 40;
-
+    
     /**
      * the WMS Animator animatorExecutor service
      */
