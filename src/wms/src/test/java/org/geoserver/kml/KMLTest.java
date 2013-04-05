@@ -4,10 +4,16 @@
  */
 package org.geoserver.kml;
 
+import java.io.StringWriter;
 import java.net.URL;
 import java.util.Collections;
 
 import javax.xml.namespace.QName;
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
 
 import junit.framework.Test;
 
@@ -55,6 +61,14 @@ public class KMLTest extends WMSTestSupport {
             "&styles=" + MockData.BASIC_POLYGONS.getLocalPart() + 
             "&height=1024&width=1024&bbox=-180,-90,180,90&srs=EPSG:4326" 
         );
+        
+        TransformerFactory tf = TransformerFactory.newInstance();
+        Transformer transformer = tf.newTransformer();
+        transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
+        StringWriter writer = new StringWriter();
+        transformer.transform(new DOMSource(doc), new StreamResult(writer));
+        String output = writer.getBuffer().toString().replaceAll("\n|\r", "");
+        System.out.println(output);
         
         assertEquals( getFeatureSource(MockData.BASIC_POLYGONS).getFeatures().size(), 
             doc.getElementsByTagName("Placemark").getLength()

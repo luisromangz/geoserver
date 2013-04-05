@@ -8,6 +8,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.geoserver.gwc.GWC;
 import org.geoserver.wms.ExtendedCapabilitiesProvider;
 import org.geoserver.wms.GetCapabilitiesRequest;
@@ -22,160 +24,179 @@ import org.xml.sax.helpers.AttributesImpl;
 import org.xml.sax.helpers.NamespaceSupport;
 
 /**
- * Implementation of the {@link ExtendedCapabilitiesProvider} extension point to contribute WMS-C
- * DTD elements and TileSet definitions to the capabilities document of the regular GeoServer WMS.
+ * Implementation of the {@link ExtendedCapabilitiesProvider} extension point to
+ * contribute WMS-C DTD elements and TileSet definitions to the capabilities
+ * document of the regular GeoServer WMS.
  * 
  * <p>
- * A {@code TileSet} is added at {@link #encode} for each GWC {@link TileLayer}, but respecting the
- * {@link GetCapabilitiesRequest#getNamespace() namespace} filter if set.
+ * A {@code TileSet} is added at {@link #encode} for each GWC {@link TileLayer},
+ * but respecting the {@link GetCapabilitiesRequest#getNamespace() namespace}
+ * filter if set.
  * </p>
  * 
  * @author Gabriel Roldan
  * 
  */
-public class CachingExtendedCapabilitiesProvider implements ExtendedCapabilitiesProvider {
+public class CachingExtendedCapabilitiesProvider implements
+		ExtendedCapabilitiesProvider {
 
-    private final GWC gwc;
+	private final GWC gwc;
 
-    public CachingExtendedCapabilitiesProvider(final GWC gwc) {
-        this.gwc = gwc;
-    }
+	public static final Log LOG = LogFactory
+			.getLog(CachingExtendedCapabilitiesProvider.class);
 
-    /**
-     * @see org.geoserver.wms.ExtendedCapabilitiesProvider#getSchemaLocations()
-     */
-    public String[] getSchemaLocations(String schemaBaseURL) {
-        return new String[0];
-    }
+	public CachingExtendedCapabilitiesProvider(final GWC gwc) {
+		this.gwc = gwc;
+	}
 
-    /**
-     * @return {@code TileSet*}
-     * @see org.geoserver.wms.ExtendedCapabilitiesProvider#getVendorSpecificCapabilitiesRoots
-     */
-    public List<String> getVendorSpecificCapabilitiesRoots(final GetCapabilitiesRequest request) {
-        if (isTiled(request)) {
-            return Collections.singletonList("TileSet*");
-        }
-        return Collections.emptyList();
-    }
+	/**
+	 * @see org.geoserver.wms.ExtendedCapabilitiesProvider#getSchemaLocations()
+	 */
+	public String[] getSchemaLocations(String schemaBaseURL) {
+		return new String[0];
+	}
 
-    private boolean isTiled(GetCapabilitiesRequest request) {
-        return Boolean.valueOf(request.getRawKvp().get("TILED")).booleanValue();
-    }
+	/**
+	 * @return {@code TileSet*}
+	 * @see org.geoserver.wms.ExtendedCapabilitiesProvider#getVendorSpecificCapabilitiesRoots
+	 */
+	public List<String> getVendorSpecificCapabilitiesRoots(
+			final GetCapabilitiesRequest request) {
+		if (isTiled(request)) {
+			return Collections.singletonList("TileSet*");
+		}
+		return Collections.emptyList();
+	}
 
-    /**
-     * @see org.geoserver.wms.ExtendedCapabilitiesProvider#getVendorSpecificCapabilitiesChildDecls()
-     */
-    public List<String> getVendorSpecificCapabilitiesChildDecls(final GetCapabilitiesRequest request) {
-        if (isTiled(request)) {
-            List<String> wmscElements = new ArrayList<String>();
-            wmscElements
-                    .add("<!ELEMENT TileSet (SRS, BoundingBox?, Resolutions, Width, Height, Format, Layers*, Styles*) >");
-            wmscElements.add("<!ELEMENT Resolutions (#PCDATA) >");
-            wmscElements.add("<!ELEMENT Width (#PCDATA) >");
-            wmscElements.add("<!ELEMENT Height (#PCDATA) >");
-            wmscElements.add("<!ELEMENT Layers (#PCDATA) >");
-            wmscElements.add("<!ELEMENT Styles (#PCDATA) >");
-            return wmscElements;
-        }
-        return Collections.emptyList();
-    }
+	private boolean isTiled(GetCapabilitiesRequest request) {
+		return Boolean.valueOf(request.getRawKvp().get("TILED")).booleanValue();
+	}
 
-    /**
-     * Empty implementation, no namespaces to add until we support the WMS-C 1.3 profile
-     * 
-     * @see org.geoserver.wms.ExtendedCapabilitiesProvider#registerNamespaces(org.xml.sax.helpers.NamespaceSupport)
-     */
-    public void registerNamespaces(NamespaceSupport namespaces) {
-        // nothing to do
-    }
+	/**
+	 * @see org.geoserver.wms.ExtendedCapabilitiesProvider#getVendorSpecificCapabilitiesChildDecls()
+	 */
+	public List<String> getVendorSpecificCapabilitiesChildDecls(
+			final GetCapabilitiesRequest request) {
+		if (isTiled(request)) {
+			List<String> wmscElements = new ArrayList<String>();
+			wmscElements
+					.add("<!ELEMENT TileSet (SRS, BoundingBox?, Resolutions, Width, Height, Format, Layers*, Styles*) >");
+			wmscElements.add("<!ELEMENT Resolutions (#PCDATA) >");
+			wmscElements.add("<!ELEMENT Width (#PCDATA) >");
+			wmscElements.add("<!ELEMENT Height (#PCDATA) >");
+			wmscElements.add("<!ELEMENT Layers (#PCDATA) >");
+			wmscElements.add("<!ELEMENT Styles (#PCDATA) >");
+			return wmscElements;
+		}
+		return Collections.emptyList();
+	}
 
-    /**
-     * @see org.geoserver.wms.ExtendedCapabilitiesProvider#encode(org.geoserver.wms.ExtendedCapabilitiesProvider.Translator,
-     *      org.geoserver.wms.WMSInfo, org.geotools.util.Version)
-     */
-    public void encode(final Translator tx, final WMSInfo wms, final GetCapabilitiesRequest request)
-            throws IOException {
-        Version version = WMS.version(request.getVersion(), true);
-        if (!WMS.VERSION_1_1_1.equals(version) || !isTiled(request)) {
-            return;
-        }
+	/**
+	 * Empty implementation, no namespaces to add until we support the WMS-C 1.3
+	 * profile
+	 * 
+	 * @see org.geoserver.wms.ExtendedCapabilitiesProvider#registerNamespaces(org.xml.sax.helpers.NamespaceSupport)
+	 */
+	public void registerNamespaces(NamespaceSupport namespaces) {
+		// nothing to do
+	}
 
-        String namespacePrefixFilter = request.getNamespace();
-        Iterable<TileLayer> tileLayers = gwc.getTileLayersByNamespacePrefix(namespacePrefixFilter);
+	/**
+	 * @see org.geoserver.wms.ExtendedCapabilitiesProvider#encode(org.geoserver.wms.ExtendedCapabilitiesProvider.Translator,
+	 *      org.geoserver.wms.WMSInfo, org.geotools.util.Version)
+	 */
+	public void encode(final Translator tx, final WMSInfo wms,
+			final GetCapabilitiesRequest request) throws IOException {
+		Version version = WMS.version(request.getVersion(), true);
+		if (!WMS.VERSION_1_1_1.equals(version) || !isTiled(request)) {
+			return;
+		}
 
-        for (TileLayer layer : tileLayers) {
+		String namespacePrefixFilter = request.getNamespace();
+		Iterable<TileLayer> tileLayers = gwc
+				.getTileLayersByNamespacePrefix(namespacePrefixFilter);
 
-            Set<String> layerGrids = layer.getGridSubsets();
+		for (TileLayer layer : tileLayers) {
+			try {
 
-            for (String gridId : layerGrids) {
-                GridSubset grid = layer.getGridSubset(gridId);
-                for (MimeType mime : layer.getMimeTypes()) {
-                    vendorSpecificTileset(tx, layer, grid, mime.getFormat());
-                }
-            }
-        }
-    }
+				Set<String> layerGrids = layer.getGridSubsets();
 
-    private void vendorSpecificTileset(final Translator tx, final TileLayer layer,
-            final GridSubset grid, final String format) {
+				for (String gridId : layerGrids) {
+					GridSubset grid = layer.getGridSubset(gridId);
+					for (MimeType mime : layer.getMimeTypes()) {
+						vendorSpecificTileset(tx, layer, grid, mime.getFormat());
+					}
+				}
+			} catch (IllegalArgumentException e) {
+				LOG.error("Procesando capabilities capa cacheada name="
+						+ layer.getName() + ", id=" + layer.getId());
+				throw e;
 
-        String srsStr = grid.getSRS().toString();
-        StringBuilder resolutionsStr = new StringBuilder();
-        double[] res = grid.getResolutions();
-        for (int i = 0; i < res.length; i++) {
-            resolutionsStr.append(Double.toString(res[i]) + " ");
-        }
+			}
+		}
+	}
 
-        String[] bs = boundsPrep(grid.getCoverageBestFitBounds());
+	private void vendorSpecificTileset(final Translator tx,
+			final TileLayer layer, final GridSubset grid, final String format) {
 
-        tx.start("TileSet");
+		String srsStr = grid.getSRS().toString();
+		StringBuilder resolutionsStr = new StringBuilder();
+		double[] res = grid.getResolutions();
+		for (int i = 0; i < res.length; i++) {
+			resolutionsStr.append(Double.toString(res[i]) + " ");
+		}
 
-        tx.start("SRS");
-        tx.chars(srsStr);
-        tx.end("SRS");
+		String[] bs = boundsPrep(grid.getCoverageBestFitBounds());
 
-        AttributesImpl atts;
-        atts = new AttributesImpl();
-        atts.addAttribute("", "SRS", "SRS", "", srsStr);
-        atts.addAttribute("", "minx", "minx", "", bs[0]);
-        atts.addAttribute("", "miny", "miny", "", bs[1]);
-        atts.addAttribute("", "maxx", "maxx", "", bs[2]);
-        atts.addAttribute("", "maxy", "maxy", "", bs[3]);
+		tx.start("TileSet");
 
-        tx.start("BoundingBox", atts);
-        tx.end("BoundingBox");
+		tx.start("SRS");
+		tx.chars(srsStr);
+		tx.end("SRS");
 
-        tx.start("Resolutions");
-        tx.chars(resolutionsStr.toString());
-        tx.end("Resolutions");
+		AttributesImpl atts;
+		atts = new AttributesImpl();
+		atts.addAttribute("", "SRS", "SRS", "", srsStr);
+		atts.addAttribute("", "minx", "minx", "", bs[0]);
+		atts.addAttribute("", "miny", "miny", "", bs[1]);
+		atts.addAttribute("", "maxx", "maxx", "", bs[2]);
+		atts.addAttribute("", "maxy", "maxy", "", bs[3]);
 
-        tx.start("Width");
-        tx.chars(String.valueOf(grid.getTileWidth()));
-        tx.end("Width");
+		tx.start("BoundingBox", atts);
+		tx.end("BoundingBox");
 
-        tx.start("Height");
-        tx.chars(String.valueOf(grid.getTileHeight()));
-        tx.end("Height");
+		tx.start("Resolutions");
+		tx.chars(resolutionsStr.toString());
+		tx.end("Resolutions");
 
-        tx.start("Format");
-        tx.chars(format);
-        tx.end("Format");
+		tx.start("Width");
+		tx.chars(String.valueOf(grid.getTileWidth()));
+		tx.end("Width");
 
-        tx.start("Layers");
-        tx.chars(layer.getName());
-        tx.end("Layers");
+		tx.start("Height");
+		tx.chars(String.valueOf(grid.getTileHeight()));
+		tx.end("Height");
 
-        // TODO ignoring styles for now
-        tx.start("Styles");
-        tx.end("Styles");
+		tx.start("Format");
+		tx.chars(format);
+		tx.end("Format");
 
-        tx.end("TileSet");
-    }
+		tx.start("Layers");
+		tx.chars(layer.getName());
+		tx.end("Layers");
 
-    String[] boundsPrep(BoundingBox bbox) {
-        String[] bs = { Double.toString(bbox.getMinX()), Double.toString(bbox.getMinY()),
-                Double.toString(bbox.getMaxX()), Double.toString(bbox.getMaxY()) };
-        return bs;
-    }
+		// TODO ignoring styles for now
+		tx.start("Styles");
+		tx.end("Styles");
+
+		tx.end("TileSet");
+	}
+
+	String[] boundsPrep(BoundingBox bbox) {
+		String[] bs = { Double.toString(bbox.getMinX()),
+				Double.toString(bbox.getMinY()),
+				Double.toString(bbox.getMaxX()),
+				Double.toString(bbox.getMaxY()) };
+		return bs;
+	}
 }

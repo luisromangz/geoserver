@@ -24,6 +24,9 @@ import java.util.zip.ZipOutputStream;
 
 import javax.media.jai.GraphicsJAI;
 
+import org.geoserver.kml.AbortedException;
+import org.geoserver.kml.KMLTransformer;
+import org.geoserver.kml.KMLWriter;
 import org.geoserver.wms.WMS;
 import org.geoserver.wms.WMSMapContext;
 import org.geotools.data.DataUtilities;

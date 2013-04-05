@@ -19,7 +19,7 @@ import javax.xml.validation.Validator;
 
 import junit.framework.Test;
 
-import org.apache.xerces.dom.DOMInputImpl;
+//import org.apache.xerces.dom.DOMInputImpl;
 import org.custommonkey.xmlunit.NamespaceContext;
 import org.custommonkey.xmlunit.SimpleNamespaceContext;
 import org.custommonkey.xmlunit.XMLUnit;
@@ -109,24 +109,24 @@ public class CapabilitiesSystemTest extends WMSTestSupport {
         SchemaFactory factory = SchemaFactory.newInstance("http://www.w3.org/2001/XMLSchema");
         URL schemaLocation = getClass().getResource(
                 "/schemas/wms/1.3.0/capabilities_1_3_0.xsd");
-        factory.setResourceResolver(new LSResourceResolver() {
-            
-            public LSInput resolveResource(String type, String namespaceURI, String publicId,
-                    String systemId, String baseURI) {
-                if(namespaceURI.equals("http://www.w3.org/1999/xlink")) {
-                    try {
-                        URL xlink = getClass().getResource("/schemas/xlink/1.0.0/xlinks.xsd");
-                        systemId = xlink.toURI().toASCIIString();
-                        DOMInputImpl input = new DOMInputImpl(publicId, systemId, null);
-                        return input;
-                    } catch(Exception e) {
-                        return null;
-                    }
-                } else {
-                    return null;
-                }
-            }
-        });
+//        factory.setResourceResolver(new LSResourceResolver() {
+//            
+//            public LSInput resolveResource(String type, String namespaceURI, String publicId,
+//                    String systemId, String baseURI) {
+//                if(namespaceURI.equals("http://www.w3.org/1999/xlink")) {
+//                    try {
+//                        URL xlink = getClass().getResource("/schemas/xlink/1.0.0/xlinks.xsd");
+//                        systemId = xlink.toURI().toASCIIString();
+//                        //DOMInputImpl input = new DOMInputImpl(publicId, systemId, null);
+//                        //return input;
+//                    } catch(Exception e) {
+//                        return null;
+//                    }
+//                } else {
+//                    return null;
+//                }
+//            }
+//        });
         Schema schema = factory.newSchema(schemaLocation);
 
         Validator validator = schema.newValidator();
